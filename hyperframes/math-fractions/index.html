@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>分数的初步认识</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;700;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: 'Noto Sans SC', sans-serif;
+      background: #0f1923;
+    }
+
+    /* ─── SHARED SLIDE BASE ─── */
+    .slide {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+    }
+
+    /* ══════════════════════════════════════
+       SLIDE 1 — 封面
+    ══════════════════════════════════════ */
+    #s1 {
+      background: linear-gradient(135deg, #0f1923 0%, #1a2d45 60%, #0f1923 100%);
+    }
+    #s1 .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,200,50,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,200,50,.06) 1px, transparent 1px);
+      background-size: 80px 80px;
+    }
+    #s1 .accent-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,180,0,.18) 0%, transparent 70%);
+    }
+    #s1 .ac1 { width: 700px; height: 700px; top: -200px; right: -150px; }
+    #s1 .ac2 { width: 500px; height: 500px; bottom: -200px; left: -100px; }
+
+    #s1 .content {
+      position: relative;
+      text-align: center;
+      z-index: 2;
+    }
+    #s1 .grade-tag {
+      display: inline-block;
+      background: rgba(255,180,0,.15);
+      border: 1px solid rgba(255,180,0,.4);
+      color: #ffb400;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      padding: 10px 32px;
+      border-radius: 4px;
+      margin-bottom: 40px;
+      opacity: 0;
+    }
+    #s1 .title-main {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 148px;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: 8px;
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    #s1 .title-main span { color: #ffb400; }
+    #s1 .subtitle {
+      font-size: 38px;
+      color: rgba(255,255,255,.5);
+      margin-top: 36px;
+      letter-spacing: 4px;
+      opacity: 0;
+    }
+    #s1 .divider {
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #ffb400, transparent);
+      margin: 32px auto;
+    }
+    #s1 .fraction-deco {
+      position: absolute;
+      font-family: 'Ma Shan Zheng', cursive;
+      color: rgba(255,180,0,.08);
+      font-size: 320px;
+      user-select: none;
+      opacity: 0;
+    }
+    #s1 .fd1 { top: 40px; left: 80px; }
+    #s1 .fd2 { bottom: 20px; right: 120px; }
+
+    /* ══════════════════════════════════════
+       SLIDE 2 — 问题引入
+    ══════════════════════════════════════ */
+    #s2 {
+      background: #f7f3ec;
+      flex-direction: column;
+    }
+    #s2 .slide-header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 10px;
+      background: linear-gradient(90deg, #ffb400, #ff6b35, #ffb400);
+    }
+    #s2 .section-label {
+      position: absolute;
+      top: 40px; left: 80px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffb400;
+      letter-spacing: 4px;
+      opacity: 0;
+    }
+    #s2 .question-box {
+      background: white;
+      border-radius: 24px;
+      padding: 60px 80px;
+      box-shadow: 0 20px 80px rgba(0,0,0,.1);
+      max-width: 1300px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    #s2 .q-text {
+      font-size: 52px;
+      font-weight: 900;
+      color: #1a2d45;
+      line-height: 1.5;
+    }
+    #s2 .q-text em {
+      color: #ff6b35;
+      font-style: normal;
+      border-bottom: 3px solid #ff6b35;
+    }
+    #s2 .apple-row {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      margin-top: 60px;
+      opacity: 0;
+    }
+    .apple {
+      font-size: 100px;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,.15));
+      transition: transform .3s;
+    }
+    #s2 .think-bubble {
+      margin-top: 50px;
+      font-size: 36px;
+      color: #888;
+      font-weight: 400;
+      opacity: 0;
+    }
+    #s2 .think-bubble strong { color: #ff6b35; }
+
+    /* ══════════════════════════════════════
+       SLIDE 3 — 认识二分之一
+    ══════════════════════════════════════ */
+    #s3 {
+      background: linear-gradient(160deg, #1a2d45 0%, #0f1923 100%);
+      flex-direction: row;
+      gap: 100px;
+      align-items: center;
+      justify-content: center;
+    }
+    #s3 .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      opacity: 0;
+      transform: translateX(-40px);
+    }
+    #s3 .step-label {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffb400;
+      letter-spacing: 4px;
+    }
+    #s3 .big-text {
+      font-size: 64px;
+      font-weight: 900;
+      color: white;
+      line-height: 1.4;
+    }
+    #s3 .big-text span { color: #ffb400; }
+    #s3 .desc-text {
+      font-size: 34px;
+      color: rgba(255,255,255,.65);
+      line-height: 1.8;
+      max-width: 680px;
+    }
+
+    /* SVG 圆形切分动画 */
+    #s3 .right-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      opacity: 0;
+      transform: translateX(40px);
+    }
+    #s3 svg.pie { overflow: visible; }
+    #s3 .pie-label {
+      font-size: 30px;
+      color: rgba(255,255,255,.6);
+      text-align: center;
+    }
+
+    /* 大分数展示 */
+    #s3 .big-fraction {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0;
+      transform: scale(.7);
+    }
+    #s3 .frac-num {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 160px;
+      color: #ffb400;
+      line-height: 1;
+    }
+    #s3 .frac-bar {
+      width: 120px;
+      height: 6px;
+      background: white;
+      border-radius: 3px;
+      margin: 4px 0;
+    }
+    #s3 .frac-den {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 160px;
+      color: white;
+      line-height: 1;
+    }
+    #s3 .frac-meaning {
+      font-size: 26px;
+      color: rgba(255,255,255,.5);
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    /* ══════════════════════════════════════
+       SLIDE 4 — 各部分名称
+    ══════════════════════════════════════ */
+    #s4 {
+      background: #fafafa;
+      flex-direction: column;
+      gap: 60px;
+    }
+    #s4 .s4-title {
+      font-size: 56px;
+      font-weight: 900;
+      color: #1a2d45;
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    #s4 .s4-title span { color: #ffb400; }
+    #s4 .anatomy-wrap {
+      display: flex;
+      align-items: center;
+      gap: 100px;
+      opacity: 0;
+    }
+    #s4 .anatomy-fraction {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    #s4 .af-num {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 220px;
+      color: #ff6b35;
+      line-height: 1;
+    }
+    #s4 .af-bar {
+      width: 160px;
+      height: 8px;
+      background: #1a2d45;
+      border-radius: 4px;
+      margin: 6px 0;
+    }
+    #s4 .af-den {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 220px;
+      color: #1a2d45;
+      line-height: 1;
+    }
+    /* arrows */
+    #s4 .labels-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+    .label-item {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    .label-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .label-name {
+      font-size: 36px;
+      font-weight: 900;
+    }
+    .label-desc {
+      font-size: 26px;
+      color: #888;
+      margin-left: 8px;
+    }
+    .li-numerator .label-dot { background: #ff6b35; }
+    .li-numerator .label-name { color: #ff6b35; }
+    .li-bar .label-dot { background: #1a2d45; }
+    .li-bar .label-name { color: #1a2d45; }
+    .li-denominator .label-dot { background: #1a2d45; }
+    .li-denominator .label-name { color: #1a2d45; }
+
+    /* ══════════════════════════════════════
+       SLIDE 5 — 更多分数 & 比大小
+    ══════════════════════════════════════ */
+    #s5 {
+      background: linear-gradient(135deg, #1a2d45 0%, #2a4a6b 100%);
+      flex-direction: column;
+      gap: 50px;
+    }
+    #s5 .s5-title {
+      font-size: 54px;
+      font-weight: 900;
+      color: white;
+      opacity: 0;
+    }
+    #s5 .s5-title span { color: #ffb400; }
+    #s5 .fraction-cards {
+      display: flex;
+      gap: 48px;
+      opacity: 0;
+    }
+    .fcard {
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 20px;
+      padding: 40px 56px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transform: translateY(40px);
+      opacity: 0;
+    }
+    .fcard .fc-pie { margin-bottom: 12px; }
+    .fcard .fc-frac {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .fcard .fc-n, .fcard .fc-d {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 80px;
+      color: #ffb400;
+      line-height: 1;
+    }
+    .fcard .fc-d { color: white; }
+    .fcard .fc-bar {
+      width: 60px; height: 4px;
+      background: rgba(255,255,255,.5);
+      border-radius: 2px;
+      margin: 2px 0;
+    }
+    .fcard .fc-label {
+      font-size: 26px;
+      color: rgba(255,255,255,.5);
+      margin-top: 12px;
+    }
+
+    /* ══════════════════════════════════════
+       SLIDE 6 — 总结
+    ══════════════════════════════════════ */
+    #s6 {
+      background: linear-gradient(135deg, #0f1923 0%, #1a2d45 100%);
+      flex-direction: column;
+      gap: 0;
+    }
+    #s6 .s6-heading {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 80px;
+      color: #ffb400;
+      margin-bottom: 50px;
+      opacity: 0;
+    }
+    #s6 .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 36px;
+      max-width: 1500px;
+    }
+    .scard {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,180,0,.2);
+      border-radius: 20px;
+      padding: 44px 40px;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    .scard .sc-icon { font-size: 56px; margin-bottom: 16px; }
+    .scard .sc-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #ffb400;
+      margin-bottom: 14px;
+    }
+    .scard .sc-body {
+      font-size: 24px;
+      color: rgba(255,255,255,.65);
+      line-height: 1.8;
+    }
+    #s6 .footer-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #ffb400, #ff6b35, #ffb400);
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ SLIDE 1 ══ -->
+<div id="s1" class="slide"
+     data-composition-id="math-fractions"
+     data-start="0" data-duration="5"
+     data-width="1920" data-height="1080">
+  <div class="bg-grid"></div>
+  <div class="accent-circle ac1"></div>
+  <div class="accent-circle ac2"></div>
+  <div class="fraction-deco fd1">½</div>
+  <div class="fraction-deco fd2">¾</div>
+  <div class="content">
+    <div class="grade-tag" id="s1-tag">四年级数学</div>
+    <div class="title-main" id="s1-title"><span>分数</span>的初步认识</div>
+    <div class="divider" id="s1-div"></div>
+    <div class="subtitle" id="s1-sub">理解分数 · 读写分数 · 比较大小</div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 2 ══ -->
+<div id="s2" class="slide" data-start="5" data-duration="6">
+  <div class="slide-header"></div>
+  <div class="section-label" id="s2-label">◆ 情境导入</div>
+  <div class="question-box" id="s2-box">
+    <div class="q-text">
+      把一个苹果<em>平均分给 2 个人</em>，<br>
+      每人得到多少？
+    </div>
+    <div class="apple-row" id="s2-apples">
+      <div class="apple">🍎</div>
+      <div class="apple" style="opacity:.3;font-size:60px;align-self:center">➗</div>
+      <div class="apple">👧</div>
+      <div class="apple">👦</div>
+    </div>
+    <div class="think-bubble" id="s2-think">
+      每人得到的，不是整数……<strong>用什么表示？</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 3 ══ -->
+<div id="s3" class="slide" data-start="11" data-duration="8">
+  <div class="left-panel" id="s3-left">
+    <div class="step-label">STEP 01 · 平均分</div>
+    <div class="big-text">把一个圆<span>平均分成 2 份</span></div>
+    <div class="desc-text">
+      每份就是这个圆的<br>
+      <strong style="color:#ffb400;font-size:42px;">二分之一</strong>
+    </div>
+    <div class="big-fraction" id="s3-frac">
+      <div class="frac-num">1</div>
+      <div class="frac-bar"></div>
+      <div class="frac-den">2</div>
+      <div class="frac-meaning">读作：二分之一 &nbsp;|&nbsp; 写作：½</div>
+    </div>
+  </div>
+
+  <div class="right-panel" id="s3-right">
+    <svg class="pie" width="380" height="380" viewBox="0 0 380 380">
+      <!-- 底圆 -->
+      <circle cx="190" cy="190" r="170" fill="#1e3a5f" stroke="rgba(255,255,255,.1)" stroke-width="2"/>
+      <!-- 左半 - 高亮 -->
+      <path id="pie-left"
+            d="M190,190 L190,20 A170,170 0 0,0 190,360 Z"
+            fill="#ffb400" opacity="0"
+            stroke="white" stroke-width="3"/>
+      <!-- 右半 -->
+      <path id="pie-right"
+            d="M190,190 L190,20 A170,170 0 0,1 190,360 Z"
+            fill="rgba(255,255,255,.08)"
+            stroke="white" stroke-width="3"/>
+      <!-- 分割线 -->
+      <line x1="190" y1="20" x2="190" y2="360"
+            stroke="white" stroke-width="4" stroke-dasharray="8 6" opacity=".6"/>
+      <!-- 标注 -->
+      <text x="100" y="200" text-anchor="middle"
+            font-size="48" fill="white" font-family="Ma Shan Zheng, cursive"
+            id="pie-label-l" opacity="0">½</text>
+      <text x="280" y="200" text-anchor="middle"
+            font-size="48" fill="rgba(255,255,255,.4)" font-family="Ma Shan Zheng, cursive"
+            id="pie-label-r" opacity="0">½</text>
+    </svg>
+    <div class="pie-label" id="s3-pie-caption">高亮部分 = 整体的二分之一</div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 4 ══ -->
+<div id="s4" class="slide" data-start="19" data-duration="7">
+  <div class="s4-title" id="s4-title">认识分数的<span>各部分名称</span></div>
+  <div class="anatomy-wrap" id="s4-wrap">
+    <div class="anatomy-fraction">
+      <div class="af-num" id="af-n">1</div>
+      <div class="af-bar"></div>
+      <div class="af-den" id="af-d">2</div>
+    </div>
+    <div class="labels-panel">
+      <div class="label-item li-numerator" id="li1">
+        <div class="label-dot"></div>
+        <div>
+          <span class="label-name">分子</span>
+          <span class="label-desc">—— 表示取了几份（上面的数）</span>
+        </div>
+      </div>
+      <div class="label-item li-bar" id="li2">
+        <div class="label-dot"></div>
+        <div>
+          <span class="label-name">分数线</span>
+          <span class="label-desc">—— 表示"平均分"</span>
+        </div>
+      </div>
+      <div class="label-item li-denominator" id="li3">
+        <div class="label-dot"></div>
+        <div>
+          <span class="label-name">分母</span>
+          <span class="label-desc">—— 表示平均分成几份（下面的数）</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 5 ══ -->
+<div id="s5" class="slide" data-start="26" data-duration="8">
+  <div class="s5-title" id="s5-title">认识更多分数 <span>——</span> 几分之几？</div>
+  <div class="fraction-cards" id="s5-cards">
+
+    <!-- 1/3 -->
+    <div class="fcard" id="fc1">
+      <svg class="fc-pie" width="160" height="160" viewBox="0 0 160 160">
+        <circle cx="80" cy="80" r="72" fill="#1e3a5f" stroke="rgba(255,255,255,.1)" stroke-width="2"/>
+        <!-- 1/3 扇形 0°~120° -->
+        <path d="M80,80 L80,8 A72,72 0 0,1 142.4,44 Z" fill="#ffb400"/>
+        <path d="M80,80 L142.4,44 A72,72 0 0,1 17.6,44 Z" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+        <path d="M80,80 L17.6,44 A72,72 0 0,1 80,8 Z" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+      </svg>
+      <div class="fc-frac">
+        <div class="fc-n">1</div>
+        <div class="fc-bar"></div>
+        <div class="fc-d">3</div>
+      </div>
+      <div class="fc-label">三分之一</div>
+    </div>
+
+    <!-- 2/4 -->
+    <div class="fcard" id="fc2">
+      <svg class="fc-pie" width="160" height="160" viewBox="0 0 160 160">
+        <circle cx="80" cy="80" r="72" fill="#1e3a5f" stroke="rgba(255,255,255,.1)" stroke-width="2"/>
+        <path d="M80,80 L80,8 A72,72 0 0,1 152,80 Z" fill="#ffb400"/>
+        <path d="M80,80 L152,80 A72,72 0 0,1 80,152 Z" fill="#ff6b35" opacity=".7"/>
+        <path d="M80,80 L80,152 A72,72 0 0,1 8,80 Z" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+        <path d="M80,80 L8,80 A72,72 0 0,1 80,8 Z" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+      </svg>
+      <div class="fc-frac">
+        <div class="fc-n">2</div>
+        <div class="fc-bar"></div>
+        <div class="fc-d">4</div>
+      </div>
+      <div class="fc-label">四分之二</div>
+    </div>
+
+    <!-- 3/4 -->
+    <div class="fcard" id="fc3">
+      <svg class="fc-pie" width="160" height="160" viewBox="0 0 160 160">
+        <circle cx="80" cy="80" r="72" fill="#1e3a5f" stroke="rgba(255,255,255,.1)" stroke-width="2"/>
+        <path d="M80,80 L80,8 A72,72 0 0,1 152,80 Z" fill="#ffb400"/>
+        <path d="M80,80 L152,80 A72,72 0 0,1 80,152 Z" fill="#ffb400" opacity=".9"/>
+        <path d="M80,80 L80,152 A72,72 0 0,1 8,80 Z" fill="#ffb400" opacity=".75"/>
+        <path d="M80,80 L8,80 A72,72 0 0,1 80,8 Z" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+      </svg>
+      <div class="fc-frac">
+        <div class="fc-n">3</div>
+        <div class="fc-bar"></div>
+        <div class="fc-d">4</div>
+      </div>
+      <div class="fc-label">四分之三</div>
+    </div>
+
+    <!-- 1/2 -->
+    <div class="fcard" id="fc4">
+      <svg class="fc-pie" width="160" height="160" viewBox="0 0 160 160">
+        <circle cx="80" cy="80" r="72" fill="#1e3a5f" stroke="rgba(255,255,255,.1)" stroke-width="2"/>
+        <path d="M80,80 L80,8 A72,72 0 0,1 80,152 Z" fill="#ffb400"/>
+        <path d="M80,80 L80,152 A72,72 0 0,1 80,8 Z" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+      </svg>
+      <div class="fc-frac">
+        <div class="fc-n">1</div>
+        <div class="fc-bar"></div>
+        <div class="fc-d">2</div>
+      </div>
+      <div class="fc-label">二分之一</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SLIDE 6 ══ -->
+<div id="s6" class="slide" data-start="34" data-duration="6">
+  <div class="s6-heading" id="s6-h">📖 本节知识总结</div>
+  <div class="summary-grid">
+    <div class="scard" id="sc1">
+      <div class="sc-icon">✂️</div>
+      <div class="sc-title">平均分</div>
+      <div class="sc-body">分数的前提是<strong style="color:white">平均分</strong>，每一份必须相等，不能随意切分。</div>
+    </div>
+    <div class="scard" id="sc2">
+      <div class="sc-icon">🔢</div>
+      <div class="sc-title">分数各部分</div>
+      <div class="sc-body">
+        <strong style="color:#ffb400">分子</strong>（上）取了几份<br>
+        <strong style="color:white">分数线</strong>表示除法<br>
+        <strong style="color:#ffb400">分母</strong>（下）共分几份
+      </div>
+    </div>
+    <div class="scard" id="sc3">
+      <div class="sc-icon">📏</div>
+      <div class="sc-title">比较大小</div>
+      <div class="sc-body">分母相同时，<strong style="color:#ffb400">分子越大，分数越大</strong>；分子相同时，分母越大，分数越小。</div>
+    </div>
+  </div>
+  <div class="footer-bar" id="s6-footer"></div>
+</div>
+
+<!-- ══════ GSAP TIMELINE ══════ -->
+<script>
+gsap.defaults({ ease: "power3.out" });
+
+const tl = gsap.timeline();
+
+/* ── S1 封面 ── */
+tl.to("#s1", { opacity: 1, duration: .01 }, 0)
+  .to("#s1 .fd1, #s1 .fd2", { opacity: 1, duration: 1.2 }, 0.1)
+  .to("#s1-tag", { opacity: 1, y: 0, duration: .7 }, 0.3)
+  .to("#s1-title", { opacity: 1, y: 0, duration: .9 }, 0.7)
+  .to("#s1-div", { width: 600, duration: .8, ease: "power2.inOut" }, 1.2)
+  .to("#s1-sub", { opacity: 1, duration: .7 }, 1.8)
+  .to("#s1", { opacity: 0, duration: .5 }, 4.5)
+
+/* ── S2 问题引入 ── */
+.to("#s2", { opacity: 1, duration: .01 }, 5)
+  .to("#s2-label", { opacity: 1, duration: .5 }, 5.2)
+  .to("#s2-box", { opacity: 1, y: 0, duration: .8 }, 5.4)
+  .to("#s2-apples", { opacity: 1, duration: .5 }, 6.2)
+  .to("#s2-apples .apple", {
+    y: -20, stagger: .12, duration: .4, yoyo: true, repeat: 1, ease: "power1.inOut"
+  }, 6.5)
+  .to("#s2-think", { opacity: 1, duration: .7 }, 8.5)
+  .to("#s2", { opacity: 0, duration: .5 }, 10.5)
+
+/* ── S3 认识½ ── */
+.to("#s3", { opacity: 1, duration: .01 }, 11)
+  .to("#s3-left", { opacity: 1, x: 0, duration: .9 }, 11.2)
+  .to("#s3-right", { opacity: 1, x: 0, duration: .9 }, 11.4)
+  .to("#pie-left", { opacity: 1, duration: .8 }, 12.2)
+  .to("#pie-label-l, #pie-label-r", { opacity: 1, duration: .5 }, 13)
+  .to("#s3-frac", { opacity: 1, scale: 1, duration: .7, ease: "back.out(1.4)" }, 13.8)
+  .to("#s3", { opacity: 0, duration: .5 }, 18.5)
+
+/* ── S4 各部分名称 ── */
+.to("#s4", { opacity: 1, duration: .01 }, 19)
+  .to("#s4-title", { opacity: 1, y: 0, duration: .7 }, 19.2)
+  .to("#s4-wrap", { opacity: 1, duration: .5 }, 19.8)
+  .to("#li1", { opacity: 1, x: 0, duration: .6 }, 20.4)
+  .to("#li2", { opacity: 1, x: 0, duration: .6 }, 21.0)
+  .to("#li3", { opacity: 1, x: 0, duration: .6 }, 21.6)
+  .to("#af-n", { color: "#ff6b35", scale: 1.15, duration: .4, yoyo: true, repeat: 1 }, 20.5)
+  .to("#af-d", { color: "#ffb400", scale: 1.15, duration: .4, yoyo: true, repeat: 1 }, 21.7)
+  .to("#s4", { opacity: 0, duration: .5 }, 25.5)
+
+/* ── S5 更多分数 ── */
+.to("#s5", { opacity: 1, duration: .01 }, 26)
+  .to("#s5-title", { opacity: 1, duration: .7 }, 26.2)
+  .to("#s5-cards", { opacity: 1, duration: .01 }, 26.8)
+  .to("#fc1", { opacity: 1, y: 0, duration: .6, ease: "back.out(1.4)" }, 27.0)
+  .to("#fc2", { opacity: 1, y: 0, duration: .6, ease: "back.out(1.4)" }, 27.3)
+  .to("#fc3", { opacity: 1, y: 0, duration: .6, ease: "back.out(1.4)" }, 27.6)
+  .to("#fc4", { opacity: 1, y: 0, duration: .6, ease: "back.out(1.4)" }, 27.9)
+  .to("#s5", { opacity: 0, duration: .5 }, 33.5)
+
+/* ── S6 总结 ── */
+.to("#s6", { opacity: 1, duration: .01 }, 34)
+  .to("#s6-h", { opacity: 1, duration: .7 }, 34.2)
+  .to("#sc1", { opacity: 1, y: 0, duration: .6, ease: "back.out(1.2)" }, 34.8)
+  .to("#sc2", { opacity: 1, y: 0, duration: .6, ease: "back.out(1.2)" }, 35.2)
+  .to("#sc3", { opacity: 1, y: 0, duration: .6, ease: "back.out(1.2)" }, 35.6)
+  .to("#s6-footer", { opacity: 1, duration: .8 }, 36.5);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "id": "math-fractions",
+  "title": "四年级数学 · 分数的初步认识",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "duration": 40,
+  "entry": "index.html",
+  "output": "dist/math-fractions.mp4",
+  "audio": {
+    "tts": {
+      "provider": "edge-tts",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "script": "script.txt"
+    }
+  }
+}
