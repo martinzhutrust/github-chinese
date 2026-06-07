@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>抖音来客 · 智能体管理后台</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --bg2:       #161b22;
+      --bg3:       #21262d;
+      --border:    rgba(255,255,255,0.08);
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --blue:      #1e6fe6;
+      --purple:    #7c3aed;
+      --red:       #fe2c55;
+      --green:     #22c55e;
+      --teal:      #25f4ee;
+      --yellow:    #f0b429;
+      --sidebar-w: 220px;
+    }
+
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      font-size: 13px;
+    }
+
+    /* ── SIDEBAR ─────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo h2 {
+      font-size: 15px; font-weight: 700;
+      background: linear-gradient(135deg, var(--red), var(--teal));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .sidebar-logo p { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    .nav-section { padding: 14px 10px 6px; }
+    .nav-label { font-size: 10px; color: var(--muted); text-transform: uppercase;
+                 letter-spacing: 0.8px; padding: 0 8px 6px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 10px; border-radius: 8px; cursor: pointer;
+      color: var(--muted); transition: all 0.15s; font-size: 13px;
+      margin-bottom: 1px;
+    }
+    .nav-item:hover { background: var(--bg3); color: var(--text); }
+    .nav-item.active { background: rgba(30,111,230,0.15); color: #60a5fa; }
+    .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+    .nav-badge {
+      margin-left: auto; font-size: 10px; padding: 1px 6px;
+      border-radius: 999px; background: rgba(254,44,85,0.2); color: #f87171;
+    }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 14px 18px;
+      border-top: 1px solid var(--border);
+    }
+    .status-dot { display: inline-block; width: 7px; height: 7px;
+                  border-radius: 50%; background: var(--green);
+                  margin-right: 6px; animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+
+    /* ── MAIN ────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOPBAR ──────────────────────────────────────────── */
+    .topbar {
+      height: 56px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar h1 { font-size: 15px; font-weight: 700; flex: 1; }
+    .shop-select {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); padding: 6px 12px; border-radius: 8px;
+      font-size: 12px; cursor: pointer;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 8px; border: none;
+      cursor: pointer; font-size: 12px; font-weight: 600;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-danger { background: rgba(254,44,85,0.15); color: #f87171;
+                  border: 1px solid rgba(254,44,85,0.3); }
+    .btn-danger:hover { background: rgba(254,44,85,0.25); }
+    .btn-ghost { background: var(--bg3); color: var(--text);
+                 border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.2); }
+
+    /* ── CONTENT AREA ────────────────────────────────────── */
+    .content { padding: 24px; flex: 1; }
+
+    /* ── PAGE SECTIONS ───────────────────────────────────── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── CARDS ───────────────────────────────────────────── */
+    .card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px; margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .card-title { font-size: 14px; font-weight: 700; }
+    .card-badge {
+      font-size: 10px; padding: 2px 8px; border-radius: 999px;
+      font-weight: 600; margin-left: auto;
+    }
+
+    /* ── GRID ────────────────────────────────────────────── */
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 16px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; margin-bottom: 16px; }
+
+    /* ── METRIC CARD ─────────────────────────────────────── */
+    .metric-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px;
+    }
+    .metric-label { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+    .metric-value { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    .metric-change { font-size: 11px; }
+    .up { color: var(--green); }
+    .down { color: var(--red); }
+
+    /* ── TABLE ───────────────────────────────────────────── */
+    .table { width: 100%; border-collapse: collapse; }
+    .table th {
+      text-align: left; padding: 8px 12px; font-size: 11px;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table td {
+      padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 12px;
+    }
+    .table tr:last-child td { border-bottom: none; }
+    .table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* ── STATUS BADGES ───────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600;
+    }
+    .badge-green  { background: rgba(34,197,94,0.15);  color: #4ade80; }
+    .badge-red    { background: rgba(254,44,85,0.15);  color: #f87171; }
+    .badge-yellow { background: rgba(240,180,41,0.15); color: #fbbf24; }
+    .badge-blue   { background: rgba(30,111,230,0.15); color: #60a5fa; }
+    .badge-purple { background: rgba(124,58,237,0.15); color: #c084fc; }
+
+    /* ── AGENT CARDS ─────────────────────────────────────── */
+    .agent-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+    .agent-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px; transition: all 0.15s;
+    }
+    .agent-card:hover { border-color: rgba(254,44,85,0.35); }
+    .agent-icon { font-size: 26px; margin-bottom: 10px; }
+    .agent-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .agent-desc { font-size: 11px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+    .agent-stats { display: flex; gap: 14px; margin-bottom: 14px; }
+    .agent-stat { font-size: 11px; color: var(--muted); }
+    .agent-stat strong { display: block; font-size: 16px; font-weight: 700; color: var(--text); }
+    .agent-actions { display: flex; gap: 8px; }
+
+    /* ── LOG ─────────────────────────────────────────────── */
+    .log-list { display: flex; flex-direction: column; gap: 6px; max-height: 400px; overflow-y: auto; }
+    .log-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 12px; border-radius: 8px; background: var(--bg3);
+      font-size: 11.5px;
+    }
+    .log-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .log-time { color: var(--muted); font-size: 10px; margin-top: 2px; flex-shrink: 0; }
+    .log-text { flex: 1; line-height: 1.5; }
+    .log-agent { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    /* ── RULE MATCHES ────────────────────────────────────── */
+    .rule-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px; border-radius: 10px; margin-bottom: 8px;
+      border: 1px solid transparent;
+    }
+    .rule-critical { background: rgba(254,44,85,0.08); border-color: rgba(254,44,85,0.2); }
+    .rule-warning  { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.2); }
+    .rule-info     { background: rgba(30,111,230,0.08); border-color: rgba(30,111,230,0.2); }
+    .rule-icon { font-size: 16px; }
+    .rule-msg { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+    .rule-action { font-size: 11px; color: var(--muted); }
+
+    /* ── PROGRESS BAR ────────────────────────────────────── */
+    .progress-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+    /* ── TEXTAREA ────────────────────────────────────────── */
+    textarea, input[type=text] {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; resize: vertical; outline: none;
+      font-family: inherit;
+    }
+    textarea:focus, input[type=text]:focus { border-color: var(--blue); }
+    label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+
+    select {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; outline: none; cursor: pointer;
+    }
+    select:focus { border-color: var(--blue); }
+
+    .form-row { margin-bottom: 14px; }
+
+    /* ── RESPONSE BOX ────────────────────────────────────── */
+    .response-box {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+      font-size: 12.5px; line-height: 1.8;
+      white-space: pre-wrap; max-height: 400px; overflow-y: auto;
+    }
+
+    /* ── KNOWLEDGE ENTRY ─────────────────────────────────── */
+    .kb-entry {
+      padding: 12px 14px; border-radius: 10px;
+      background: var(--bg3); margin-bottom: 8px;
+    }
+    .kb-entry-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .kb-entry-content { font-size: 11.5px; color: var(--muted); line-height: 1.6; }
+    .kb-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .kb-tag {
+      font-size: 10px; padding: 2px 7px; border-radius: 4px;
+      background: rgba(124,58,237,0.15); color: #c084fc;
+    }
+
+    /* ── SPINNER ─────────────────────────────────────────── */
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── EXECUTION ACTION LIST ───────────────────────────── */
+    .action-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; border-radius: 10px;
+      background: var(--bg3); margin-bottom: 6px;
+    }
+    .action-icon { font-size: 18px; flex-shrink: 0; }
+    .action-name { font-size: 12.5px; font-weight: 600; }
+    .action-desc { font-size: 11px; color: var(--muted); }
+    .action-status { margin-left: auto; }
+
+    /* ── SCROLLBAR ───────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+    /* ── LIVE BADGE ──────────────────────────────────────── */
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; background: var(--red);
+      animation: pulse 1.2s infinite; margin-right: 5px;
+    }
+
+    /* ── DIVIDER ─────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    /* ── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .grid-4 { grid-template-columns: repeat(2,1fr); }
+      .agent-grid { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 768px) {
+      .grid-4, .grid-3, .grid-2, .agent-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h2>来客智能体系统</h2>
+    <p>Multi-Agent Collaboration</p>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">概览</div>
+    <div class="nav-item active" onclick="nav('overview',this)">
+      <span class="icon">📊</span> 经营总览
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">① 感知层</div>
+    <div class="nav-item" onclick="nav('perception',this)">
+      <span class="icon">🔌</span> 数据接入
+    </div>
+    <div class="nav-item" onclick="nav('livestream',this)">
+      <span class="icon">📡</span> 直播监控
+      <span class="nav-badge" id="live-badge">LIVE</span>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">② 认知层</div>
+    <div class="nav-item" onclick="nav('knowledge',this)">
+      <span class="icon">📚</span> 知识库
+    </div>
+    <div class="nav-item" onclick="nav('rules',this)">
+      <span class="icon">⚡</span> 规则引擎
+      <span class="nav-badge" id="rule-badge">2</span>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">③ 智能体层</div>
+    <div class="nav-item" onclick="nav('agents',this)">
+      <span class="icon">🤖</span> Agent 控制台
+    </div>
+    <div class="nav-item" onclick="nav('dispatch',this)">
+      <span class="icon">🧠</span> 任务调度
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">④ 执行层</div>
+    <div class="nav-item" onclick="nav('execution',this)">
+      <span class="icon">⚙️</span> 自动化动作
+    </div>
+    <div class="nav-item" onclick="nav('logs',this)">
+      <span class="icon">📋</span> 执行日志
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div style="font-size:11px;color:var(--muted)">
+      <span class="status-dot"></span>系统运行中
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px" id="clock"></div>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN
+═══════════════════════════════════════════════════════ -->
+<div class="main">
+  <header class="topbar">
+    <h1 id="page-title">经营总览</h1>
+    <select class="shop-select" id="shop-select">
+      <option value="shop_demo_001">测试店铺 001</option>
+      <option value="shop_demo_002">测试店铺 002</option>
+    </select>
+    <button class="btn btn-ghost" onclick="refreshAll()">🔄 刷新数据</button>
+    <button class="btn btn-primary" onclick="runFullAnalysis()">🚀 全局分析</button>
+  </header>
+
+  <div class="content">
+
+    <!-- ══ PAGE: 总览 ══════════════════════════════════════ -->
+    <div class="page active" id="page-overview">
+      <div class="grid-4" id="overview-metrics"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span>⚡</span><span class="card-title">规则告警</span>
+            <span class="card-badge badge badge-red" id="alert-count">检测中…</span>
+          </div>
+          <div id="rule-alerts-short"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span>📡</span><span class="card-title">直播间实时</span>
+            <span id="live-status-badge"></span>
+          </div>
+          <div id="live-mini"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span>📢</span><span class="card-title">投放健康度</span>
+          </div>
+          <div id="ads-mini"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span>📦</span><span class="card-title">库存预警</span>
+          </div>
+          <div id="stock-mini"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: 感知层 ════════════════════════════════════ -->
+    <div class="page" id="page-perception">
+      <div class="grid-3" id="perception-cards"></div>
+    </div>
+
+    <!-- ══ PAGE: 直播监控 ══════════════════════════════════ -->
+    <div class="page" id="page-livestream">
+      <div class="grid-4" id="live-metrics"></div>
+      <div class="card">
+        <div class="card-header">
+          <span>📈</span><span class="card-title">在线人数趋势（模拟）</span>
+        </div>
+        <canvas id="liveChart" height="80"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span>🎬</span><span class="card-title">直播运营建议</span>
+          <button class="btn btn-primary" style="margin-left:auto;padding:5px 12px" onclick="askLiveAgent()">
+            获取 AI 建议
+          </button>
+        </div>
+        <div id="live-advice" class="response-box" style="min-height:100px;color:var(--muted)">
+          点击"获取 AI 建议"让直播运营 Agent 分析当前直播间状态…
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: 知识库 ════════════════════════════════════ -->
+    <div class="page" id="page-knowledge">
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="form-row">
+          <label>知识库类型</label>
+          <select id="kb-type-select">
+            <option value="platform_rules">抖音平台规则库</option>
+            <option value="laike_operations">来客后台操作知识库</option>
+            <option value="industry">行业经营知识库</option>
+            <option value="product">商品知识库</option>
+            <option value="ads_strategy">投放策略知识库</option>
+            <option value="livestream_ops">直播运营知识库</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>关键词筛选</label>
+          <input type="text" id="kb-keywords" placeholder="输入关键词，多个用空格分隔">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="queryKnowledge()" style="margin-bottom:16px">查询知识库</button>
+      <div id="kb-results"></div>
+    </div>
+
+    <!-- ══ PAGE: 规则引擎 ══════════════════════════════════ -->
+    <div class="page" id="page-rules">
+      <div class="card">
+        <div class="card-header">
+          <span>⚡</span><span class="card-title">规则引擎实时评估</span>
+          <button class="btn btn-primary" style="margin-left:auto;padding:5px 12px" onclick="evalRules()">重新评估</button>
+        </div>
+        <div id="rule-results"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span>📋</span><span class="card-title">已配置规则列表</span></div>
+        <table class="table">
+          <thead><tr><th>规则 ID</th><th>描述</th><th>级别</th><th>触发动作</th></tr></thead>
+          <tbody id="rule-list"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: Agent 控制台 ══════════════════════════════ -->
+    <div class="page" id="page-agents">
+      <div class="agent-grid" id="agent-cards"></div>
+    </div>
+
+    <!-- ══ PAGE: 任务调度 ══════════════════════════════════ -->
+    <div class="page" id="page-dispatch">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span>🎯</span><span class="card-title">单 Agent 调度</span></div>
+          <div class="form-row">
+            <label>选择 Agent</label>
+            <select id="dispatch-agent">
+              <option value="analysis">经营分析 Agent</option>
+              <option value="ads">投放优化 Agent</option>
+              <option value="content">内容生成 Agent</option>
+              <option value="livestream">直播运营 Agent</option>
+              <option value="product">商品运营 Agent</option>
+              <option value="qa">商家问答 Agent</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>任务指令</label>
+            <textarea id="dispatch-instruction" rows="4" placeholder="描述你需要 Agent 完成的任务，例如：分析当前转化率偏低的原因，给出优化建议…"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="dispatchAgent()" id="dispatch-btn">
+            🚀 发送任务
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span>💬</span><span class="card-title">Agent 响应</span></div>
+          <div id="dispatch-response" class="response-box" style="min-height:280px;color:var(--muted)">
+            Agent 的分析结果将显示在这里…
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span>⚡</span><span class="card-title">多 Agent 并发调度</span></div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+          同时向多个 Agent 下发任务，Orchestrator 并发执行后汇总结果并仲裁冲突动作
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text)">
+            <input type="checkbox" id="m-analysis" checked> 经营分析
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text)">
+            <input type="checkbox" id="m-ads" checked> 投放优化
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text)">
+            <input type="checkbox" id="m-content"> 内容生成
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text)">
+            <input type="checkbox" id="m-livestream" checked> 直播运营
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text)">
+            <input type="checkbox" id="m-product"> 商品运营
+          </label>
+        </div>
+        <button class="btn btn-primary" onclick="dispatchMulti()" id="multi-dispatch-btn">
+          🧠 并发调度选中 Agent
+        </button>
+        <div id="multi-response" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: 执行层 ════════════════════════════════════ -->
+    <div class="page" id="page-execution">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span>⚙️</span><span class="card-title">可用自动化动作</span></div>
+          <div id="action-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span>⏰</span><span class="card-title">定时任务状态</span></div>
+          <div id="scheduler-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: 执行日志 ══════════════════════════════════ -->
+    <div class="page" id="page-logs">
+      <div class="card">
+        <div class="card-header">
+          <span>📋</span><span class="card-title">系统执行日志</span>
+          <button class="btn btn-ghost" style="margin-left:auto;padding:4px 10px;font-size:11px" onclick="clearLogs()">清空</button>
+        </div>
+        <div class="log-list" id="log-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ── STATE ──────────────────────────────────────────────────
+const API = 'http://localhost:8000/api/v1';
+let shopId = 'shop_demo_001';
+let snapshot = {};
+let logs = [];
+let agentStats = {
+  analysis_agent: { calls: 0, last: '—' },
+  ads_agent:      { calls: 0, last: '—' },
+  content_agent:  { calls: 0, last: '—' },
+  livestream_agent:{ calls: 0, last: '—' },
+  product_agent:  { calls: 0, last: '—' },
+  qa_agent:       { calls: 0, last: '—' },
+};
+
+// ── NAVIGATION ─────────────────────────────────────────────
+const pageTitles = {
+  overview:   '经营总览', perception: '感知层 — 数据接入',
+  livestream: '感知层 — 直播实时监控', knowledge: '认知层 — 知识库',
+  rules:      '认知层 — 规则引擎', agents: '智能体层 — Agent 控制台',
+  dispatch:   '智能体层 — 任务调度', execution: '执行层 — 自动化动作',
+  logs:       '执行层 — 系统日志',
+};
+
+function nav(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[page];
+  if (page === 'knowledge') queryKnowledge();
+  if (page === 'rules') evalRules();
+  if (page === 'agents') renderAgentCards();
+  if (page === 'execution') renderExecution();
+  if (page === 'logs') renderLogs();
+}
+
+// ── CLOCK ──────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleString('zh-CN', { hour12: false });
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── MOCK DATA (与后端数据源 1:1 对应) ─────────────────────
+function getMockSnapshot() {
+  return {
+    laike_api: {
+      gmv: 128500 + Math.random() * 5000,
+      orders: 342 + Math.floor(Math.random() * 20),
+      visitors: 15800 + Math.floor(Math.random() * 500),
+      conversion_rate: 0.0216 + (Math.random() - 0.5) * 0.003,
+      avg_order_value: 375.7,
+    },
+    ecommerce: {
+      total_sales: 98700,
+      refund_rate: 0.032,
+      new_buyers: 218,
+      repurchase_rate: 0.28,
+      top_categories: ['美妆', '食品', '服饰'],
+    },
+    ads: {
+      total_spend: 8500,
+      impressions: 580000,
+      clicks: 12400,
+      ctr: 0.0214,
+      cpc: 0.69,
+      roi: 3.8 + (Math.random() - 0.5) * 0.4,
+      active_plans: [
+        { plan_id: 'p001', name: '品牌词', spend: 2100, roi: 5.2 },
+        { plan_id: 'p002', name: '竞品词', spend: 1800, roi: 3.1 },
+        { plan_id: 'p003', name: '兴趣人群', spend: 4600, roi: 3.2 },
+      ],
+    },
+    product: {
+      total_skus: 156,
+      low_stock_skus: [
+        { sku_id: 'sku_001', name: '精华液 30ml', stock: 12, daily_sales: 28 },
+        { sku_id: 'sku_009', name: '面膜 10片',  stock: 5,  daily_sales: 40 },
+      ],
+      top_sellers: [
+        { sku_id: 'sku_003', name: '水乳套装', sales_7d: 480, revenue_7d: 72000 },
+      ],
+    },
+    livestream: {
+      is_live: true,
+      room_id: 'room_88812345',
+      online_viewers: 3240 + Math.floor(Math.random() * 400 - 200),
+      peak_viewers: 5100,
+      likes: 128000,
+      products_shown: 8,
+      gpm: 2850 + Math.random() * 300,
+      add_cart_rate: 0.092,
+      duration_minutes: 95,
+    },
+    comment_service: {
+      pending_comments: 42,
+      avg_response_time_minutes: 8.5,
+      sentiment: { positive: 0.72, neutral: 0.18, negative: 0.10 },
+      hot_issues: ['发货慢', '尺码偏大', '包装破损'],
+      pending_refunds: 7,
+    },
+  };
+}
+
+// ── FETCH WITH FALLBACK ────────────────────────────────────
+async function fetchAPI(path, options = {}) {
+  try {
+    const r = await fetch(API + path, { ...options,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  } catch (e) {
+    return null; // fallback to mock
+  }
+}
+
+// ── REFRESH ALL ────────────────────────────────────────────
+async function refreshAll() {
+  shopId = document.getElementById('shop-select').value;
+  const data = await fetchAPI(`/shops/${shopId}/snapshot`);
+  snapshot = data ? data.data : getMockSnapshot();
+  renderOverview();
+  renderPerception();
+  renderLiveMetrics();
+  evalRules();
+  addLog('info', '数据刷新完成', '感知层已更新所有数据源', '🔄');
+}
+
+// ── OVERVIEW ───────────────────────────────────────────────
+function renderOverview() {
+  const d = snapshot;
+  const s = d.laike_api || {};
+  const ads = d.ads || {};
+  const live = d.livestream || {};
+
+  document.getElementById('overview-metrics').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">今日 GMV</div>
+      <div class="metric-value" style="color:#60a5fa">¥${fmt(s.gmv || 0)}</div>
+      <div class="metric-change up">↑ 12.4% 较昨日</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">订单量</div>
+      <div class="metric-value" style="color:#4ade80">${(s.orders||0).toLocaleString()}</div>
+      <div class="metric-change up">↑ 8.1% 较昨日</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">访客数</div>
+      <div class="metric-value">${(s.visitors||0).toLocaleString()}</div>
+      <div class="metric-change up">↑ 5.3% 较昨日</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">转化率</div>
+      <div class="metric-value" style="color:${(s.conversion_rate||0)<0.015?'#f87171':'#4ade80'}">
+        ${((s.conversion_rate||0)*100).toFixed(2)}%
+      </div>
+      <div class="metric-change ${(s.conversion_rate||0)<0.015?'down':'up'}">
+        ${(s.conversion_rate||0)<0.015?'↓ 低于行业均值 1.5%':'↑ 高于行业均值'}
+      </div>
+    </div>
+  `;
+
+  // 告警
+  const alerts = getRuleMatches();
+  document.getElementById('alert-count').textContent = alerts.length + ' 条';
+  document.getElementById('rule-badge').textContent = alerts.filter(a=>a.sev==='critical'||a.sev==='warning').length;
+  document.getElementById('rule-alerts-short').innerHTML = alerts.slice(0,3).map(a => `
+    <div class="rule-item rule-${a.sev}">
+      <span class="rule-icon">${a.sev==='critical'?'🔴':a.sev==='warning'?'🟡':'🔵'}</span>
+      <div><div class="rule-msg">${a.msg}</div><div class="rule-action">${a.action}</div></div>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:12px;padding:8px">无告警，系统运行正常 ✓</div>';
+
+  // 直播迷你
+  const liveColor = live.is_live ? '#fe2c55' : 'var(--muted)';
+  document.getElementById('live-status-badge').innerHTML = live.is_live
+    ? '<span class="badge badge-red"><span class="live-dot"></span>直播中</span>'
+    : '<span class="badge badge-blue">未开播</span>';
+  document.getElementById('live-mini').innerHTML = `
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <div><div style="color:var(--muted);font-size:11px">在线人数</div>
+           <div style="font-size:22px;font-weight:700;color:${liveColor}">${(live.online_viewers||0).toLocaleString()}</div></div>
+      <div><div style="color:var(--muted);font-size:11px">GPM</div>
+           <div style="font-size:22px;font-weight:700">¥${(live.gpm||0).toFixed(0)}</div></div>
+      <div><div style="color:var(--muted);font-size:11px">加购率</div>
+           <div style="font-size:22px;font-weight:700">${((live.add_cart_rate||0)*100).toFixed(1)}%</div></div>
+    </div>`;
+
+  // 投放迷你
+  document.getElementById('ads-mini').innerHTML = (ads.active_plans||[]).map(p => `
+    <div style="display:flex;align-items:center;margin-bottom:10px">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">${p.name}</div>
+        <div style="font-size:11px;color:var(--muted)">消耗 ¥${(p.spend||0).toLocaleString()}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:14px;font-weight:700;color:${p.roi<2?'#f87171':p.roi>5?'#4ade80':'var(--text)'}">ROI ${p.roi}</div>
+        <div class="progress-bar" style="width:100px;margin-top:4px">
+          <div class="progress-fill" style="width:${Math.min(p.roi/6*100,100)}%;background:${p.roi<2?'#fe2c55':p.roi>5?'#22c55e':'#60a5fa'}"></div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // 库存迷你
+  const prod = d.product || {};
+  document.getElementById('stock-mini').innerHTML = (prod.low_stock_skus||[]).map(s => {
+    const days = (s.stock / Math.max(s.daily_sales,1)).toFixed(1);
+    const sev = days < 3 ? '#f87171' : '#fbbf24';
+    return `<div style="display:flex;align-items:center;margin-bottom:10px">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">${s.name}</div>
+        <div style="font-size:11px;color:var(--muted)">库存 ${s.stock} 件 · 日销 ${s.daily_sales} 件</div>
+      </div>
+      <div style="color:${sev};font-weight:700;font-size:13px">${days}天</div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:12px">库存充裕，无预警商品</div>';
+}
+
+// ── PERCEPTION ─────────────────────────────────────────────
+function renderPerception() {
+  const sources = [
+    { key:'laike_api',       icon:'🔌', name:'来客后台 API',    color:'#60a5fa' },
+    { key:'ecommerce',       icon:'🛒', name:'抖音电商数据',    color:'#60a5fa' },
+    { key:'ads',             icon:'📢', name:'投放数据',        color:'#60a5fa' },
+    { key:'product',         icon:'📦', name:'商品数据',        color:'#60a5fa' },
+    { key:'livestream',      icon:'📡', name:'直播数据',        color:'#f87171' },
+    { key:'comment_service', icon:'💬', name:'评论/客服数据',   color:'#60a5fa' },
+  ];
+  document.getElementById('perception-cards').innerHTML = sources.map(s => {
+    const data = snapshot[s.key] || {};
+    const fields = Object.entries(data).slice(0,5);
+    return `<div class="card">
+      <div class="card-header">
+        <span style="font-size:20px">${s.icon}</span>
+        <span class="card-title">${s.name}</span>
+        <span class="badge badge-green" style="margin-left:auto">已接入</span>
+      </div>
+      <div>
+        ${fields.map(([k,v]) => `
+          <div style="display:flex;align-items:center;margin-bottom:8px">
+            <span style="color:var(--muted);font-size:11px;flex:1">${k}</span>
+            <span style="font-size:12px;font-weight:600">${formatVal(v)}</span>
+          </div>`).join('')}
+        <div style="color:var(--muted);font-size:11px;margin-top:8px">共 ${Object.keys(data).length} 个字段</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatVal(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'boolean') return v ? '是' : '否';
+  if (typeof v === 'number') return v % 1 === 0 ? v.toLocaleString() : v.toFixed(3);
+  if (Array.isArray(v)) return v.slice(0,2).join('、') + (v.length>2?'…':'');
+  if (typeof v === 'object') return JSON.stringify(v).slice(0,30) + '…';
+  return String(v);
+}
+
+// ── LIVE METRICS ───────────────────────────────────────────
+let liveChart = null;
+let liveHistory = Array(20).fill(3000);
+
+function renderLiveMetrics() {
+  const live = snapshot.livestream || {};
+  liveHistory.push(live.online_viewers || 3000);
+  if (liveHistory.length > 20) liveHistory.shift();
+
+  document.getElementById('live-metrics').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label"><span class="live-dot"></span>在线人数</div>
+      <div class="metric-value" style="color:#fe2c55">${(live.online_viewers||0).toLocaleString()}</div>
+      <div class="metric-change">峰值 ${(live.peak_viewers||0).toLocaleString()}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">GPM（千次成交额）</div>
+      <div class="metric-value" style="color:${(live.gpm||0)<1000?'#f87171':'#4ade80'}">¥${(live.gpm||0).toFixed(0)}</div>
+      <div class="metric-change ${(live.gpm||0)>=2000?'up':'down'}">${(live.gpm||0)>=2000?'↑ 良好':'建议优化选品'}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">加购率</div>
+      <div class="metric-value">${((live.add_cart_rate||0)*100).toFixed(1)}%</div>
+      <div class="metric-change up">↑ 高于均值</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">直播时长</div>
+      <div class="metric-value">${live.duration_minutes||0}<span style="font-size:14px">分钟</span></div>
+      <div class="metric-change">已展示 ${live.products_shown||0} 件商品</div>
+    </div>`;
+
+  // simple sparkline
+  const canvas = document.getElementById('liveChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.parentElement.offsetWidth - 40;
+  canvas.height = 80;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const max = Math.max(...liveHistory, 1);
+  const min = Math.min(...liveHistory);
+  const range = max - min || 1;
+  const pts = liveHistory.map((v, i) => ({
+    x: (i / (liveHistory.length - 1)) * canvas.width,
+    y: canvas.height - ((v - min) / range) * (canvas.height - 16) - 8,
+  }));
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, 'rgba(254,44,85,0.4)');
+  grad.addColorStop(1, 'rgba(254,44,85,0)');
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, canvas.height);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, canvas.height);
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  pts.forEach((p,i) => i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
+  ctx.strokeStyle = '#fe2c55'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+// ── RULE ENGINE ────────────────────────────────────────────
+function getRuleMatches() {
+  const s = snapshot;
+  const d = { ...(s.laike_api||{}), ...(s.ads||{}), ...(s.livestream||{}) };
+  const low = s.product?.low_stock_skus?.[0];
+  if (low) d.stock_days = low.stock / Math.max(low.daily_sales,1);
+  d.negative_rate = s.comment_service?.sentiment?.negative || 0;
+  d.avg_response_time_minutes = s.comment_service?.avg_response_time_minutes || 0;
+
+  const rules = [
+    { id:'cvr_low',   sev:'warning',  cond: d.conversion_rate < 0.015,
+      msg: `转化率 ${((d.conversion_rate||0)*100).toFixed(2)}%，低于行业基准 1.5%`,
+      action: '触发经营分析Agent：优化商品主图/详情页/直播话术' },
+    { id:'roi_loss',  sev:'critical', cond: (d.roi||99) < 2,
+      msg: `投放 ROI ${(d.roi||0).toFixed(1)}，低于保本线 2.0`,
+      action: '触发投放优化Agent：暂停亏损计划，调整出价策略' },
+    { id:'roi_great', sev:'info',     cond: (d.roi||0) > 5,
+      msg: `投放 ROI ${(d.roi||0).toFixed(1)}，处于优秀区间`,
+      action: '触发投放优化Agent：建议扩预算 20%' },
+    { id:'stock_crit',sev:'critical', cond: (d.stock_days||99) < 3,
+      msg: `商品库存仅剩 ${(d.stock_days||0).toFixed(1)} 天销量，面临断货`,
+      action: '触发商品运营Agent：紧急补货预警，限购或临时下架' },
+    { id:'stock_warn',sev:'warning',  cond: (d.stock_days||99) >= 3 && (d.stock_days||99) < 7,
+      msg: `库存剩余 ${(d.stock_days||0).toFixed(1)} 天销量`,
+      action: '触发商品运营Agent：启动补货流程' },
+    { id:'gpm_low',   sev:'warning',  cond: (d.gpm||9999) < 1000 && d.is_live,
+      msg: `直播间 GPM ${(d.gpm||0).toFixed(0)}，低于健康阈值 1000`,
+      action: '触发直播运营Agent：调整选品结构，强化促单话术' },
+    { id:'resp_slow', sev:'warning',  cond: (d.avg_response_time_minutes||0) > 15,
+      msg: `客服响应时长 ${(d.avg_response_time_minutes||0).toFixed(0)} 分钟，超出 15 分钟`,
+      action: '推送任务：提醒客服团队优先处理消息' },
+    { id:'neg_high',  sev:'warning',  cond: (d.negative_rate||0) > 0.15,
+      msg: `负面评论占比 ${((d.negative_rate||0)*100).toFixed(1)}%，超出预警阈值`,
+      action: '触发内容Agent生成回复模板，触发问答Agent分析差评' },
+  ];
+  return rules.filter(r => r.cond);
+}
+
+async function evalRules() {
+  const matches = getRuleMatches();
+  document.getElementById('rule-results').innerHTML = matches.length
+    ? matches.map(m => `
+        <div class="rule-item rule-${m.sev}">
+          <span class="rule-icon">${m.sev==='critical'?'🔴':m.sev==='warning'?'🟡':'🔵'}</span>
+          <div>
+            <div class="rule-msg">[${m.id}] ${m.msg}</div>
+            <div class="rule-action">${m.action}</div>
+          </div>
+          <span class="badge badge-${m.sev==='critical'?'red':m.sev==='warning'?'yellow':'blue'}" style="margin-left:auto;flex-shrink:0">${m.sev}</span>
+        </div>`).join('')
+    : '<div style="color:var(--muted);padding:12px">当前无规则告警，系统运行正常 ✓</div>';
+
+  document.getElementById('rule-list').innerHTML = [
+    ['cvr_low','转化率过低','warning','触发经营分析Agent'],
+    ['roi_loss','ROI 低于保本线','critical','触发投放优化Agent'],
+    ['roi_great','ROI 优秀可扩量','info','触发投放优化Agent'],
+    ['stock_crit','库存严重不足','critical','触发商品运营Agent'],
+    ['stock_warn','库存预警','warning','触发商品运营Agent'],
+    ['gpm_low','直播 GPM 过低','warning','触发直播运营Agent'],
+    ['resp_slow','客服响应超时','warning','推送运营任务'],
+    ['neg_high','负面评论占比过高','warning','触发内容Agent+问答Agent'],
+  ].map(([id,desc,sev,action]) => `
+    <tr>
+      <td><code style="color:#c084fc">${id}</code></td>
+      <td>${desc}</td>
+      <td><span class="badge badge-${sev==='critical'?'red':sev==='warning'?'yellow':'blue'}">${sev}</span></td>
+      <td style="color:var(--muted)">${action}</td>
+    </tr>`).join('');
+}
+
+// ── KNOWLEDGE ──────────────────────────────────────────────
+const KB_DATA = {
+  platform_rules: [
+    { title:'商品违规判定', content:'禁止虚假宣传、违禁词使用（绝对化用语）、未经授权品牌词。违规将导致商品下架、保证金扣除。', tags:['违规','商品','下架'] },
+    { title:'直播违禁行为', content:'禁止展示未经审批医疗内容、夸大产品效果、引导场外交易。', tags:['直播','违禁','合规'] },
+    { title:'退款退货规则', content:'7天无理由退换货适用于大多数品类，特殊品类（内衣、食品开封）需单独标注。', tags:['退款','退货','售后'] },
+    { title:'保证金规则',   content:'不同类目保证金 500~50000 元，违规扣罚上限为保证金余额。', tags:['保证金','扣款'] },
+  ],
+  laike_operations: [
+    { title:'数据看板说明', content:'来客后台首页展示 GMV、订单量、访客数、转化率四大核心指标，可按日/周/月筛选。', tags:['看板','GMV','数据'] },
+    { title:'商品管理操作', content:'在【商品管理-商品列表】可批量修改价格、库存、上下架状态，单次批量上限 100 条。', tags:['商品管理','批量','价格'] },
+    { title:'活动报名入口', content:'在【营销中心-平台活动】报名，报名截止前 48 小时关闭通道。', tags:['活动','报名','营销'] },
+  ],
+  industry: [
+    { title:'美妆行业转化率基准', content:'抖音美妆类目平均转化率 1.8%~3.5%，直播带货转化率 2.5%~6%，低于 1.5% 需重点优化。', tags:['美妆','转化率','基准'] },
+    { title:'大促节点规律', content:'618、双11、年货节是全年三大爆发节点，建议提前 15 天备货，提前 7 天启动投放预热。', tags:['大促','618','双11','节点'] },
+    { title:'ROI 健康阈值', content:'纯投放 ROI < 2 为亏损线，3~5 为健康区间，> 5 可加大预算。直播间 GPM > 2000 为良好。', tags:['ROI','GPM','健康值'] },
+  ],
+  product: [
+    { title:'库存预警策略', content:'当库存÷日均销量 < 7（天）时触发补货预警；< 3 天时自动下架或限购。', tags:['库存','预警','补货'] },
+    { title:'定价策略', content:'锚点价应为真实历史售价，不可虚高。活动价建议为日常价的 8~9 折。', tags:['定价','锚点价','活动价'] },
+  ],
+  ads_strategy: [
+    { title:'计划冷启动规则', content:'新建广告计划需 3~7 天冷启动期，此期间不建议频繁调整出价（调幅不超过 ±10%）。', tags:['冷启动','计划','出价'] },
+    { title:'预算分配原则', content:'跑量期预算建议为出价的 30~50 倍；稳定期按实际消耗调整，单次调幅不超过 20%。', tags:['预算','分配','跑量'] },
+  ],
+  livestream_ops: [
+    { title:'直播节奏建议', content:'每 20~30 分钟为一个波次：引流品（低价）→ 主推品→ 利润品→ 互动留存，循环进行。', tags:['节奏','选品','引流'] },
+    { title:'GPM 提升方法', content:'优化选品结构（主推客单价 200~500 元品）、强化逼单话术、限时限量制造紧迫感。', tags:['GPM','客单价','话术'] },
+  ],
+};
+
+function queryKnowledge() {
+  const type = document.getElementById('kb-type-select').value;
+  const keywords = document.getElementById('kb-keywords').value.trim().split(/\s+/).filter(Boolean);
+  let entries = KB_DATA[type] || [];
+  if (keywords.length) {
+    entries = entries.filter(e =>
+      keywords.some(k => e.title.includes(k) || e.content.includes(k) || e.tags.some(t=>t.includes(k)))
+    );
+  }
+  document.getElementById('kb-results').innerHTML = entries.length
+    ? entries.map(e => `
+        <div class="kb-entry">
+          <div class="kb-entry-title">${e.title}</div>
+          <div class="kb-entry-content">${e.content}</div>
+          <div class="kb-tags">${e.tags.map(t=>`<span class="kb-tag">${t}</span>`).join('')}</div>
+        </div>`).join('')
+    : '<div style="color:var(--muted);padding:12px">无匹配结果</div>';
+}
+
+// ── AGENT CARDS ────────────────────────────────────────────
+const AGENTS = [
+  { key:'analysis_agent',   icon:'📊', name:'经营分析 Agent',  desc:'数据洞察、问题诊断、趋势预测、异常告警', type:'analysis' },
+  { key:'ads_agent',        icon:'📢', name:'投放优化 Agent',  desc:'广告计划创建、出价调优、预算分配、ROI 优化', type:'ads' },
+  { key:'content_agent',    icon:'✍️', name:'内容生成 Agent',  desc:'脚本策划、商品文案、直播话术、短视频创意', type:'content' },
+  { key:'livestream_agent', icon:'🎥', name:'直播运营 Agent',  desc:'直播间实时策略、选品节奏、互动引导', type:'livestream' },
+  { key:'product_agent',    icon:'🛍️', name:'商品运营 Agent',  desc:'动态定价、库存预警、活动策略、竞品监控', type:'product' },
+  { key:'qa_agent',         icon:'🤝', name:'商家问答 Agent',  desc:'规则解释、政策解读、违规预警、申诉指导', type:'qa' },
+];
+
+function renderAgentCards() {
+  document.getElementById('agent-cards').innerHTML = AGENTS.map(a => {
+    const s = agentStats[a.key];
+    return `<div class="agent-card">
+      <div class="agent-icon">${a.icon}</div>
+      <div class="agent-name">${a.name}</div>
+      <div class="agent-desc">${a.desc}</div>
+      <div class="agent-stats">
+        <div class="agent-stat"><strong>${s.calls}</strong>累计调用</div>
+        <div class="agent-stat"><strong style="font-size:12px">${s.last}</strong>上次调用</div>
+      </div>
+      <div class="agent-actions">
+        <button class="btn btn-primary" style="padding:5px 12px;font-size:11px"
+          onclick="quickDispatch('${a.type}','${a.name}')">快速调用</button>
+        <span class="badge badge-green" style="padding:5px 8px">就绪</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function quickDispatch(type, name) {
+  nav('dispatch', document.querySelector('.nav-item:nth-child(2)'));
+  document.getElementById('dispatch-agent').value = type;
+  document.getElementById('dispatch-instruction').value =
+    `分析当前商家经营数据，给出专业建议和可执行的优化方案。`;
+}
+
+// ── DISPATCH ───────────────────────────────────────────────
+async function dispatchAgent() {
+  const agentType = document.getElementById('dispatch-agent').value;
+  const instruction = document.getElementById('dispatch-instruction').value.trim();
+  if (!instruction) { alert('请输入任务指令'); return; }
+
+  const btn = document.getElementById('dispatch-btn');
+  btn.innerHTML = '<span class="spinner"></span> 执行中…';
+  btn.disabled = true;
+
+  const box = document.getElementById('dispatch-response');
+  box.style.color = 'var(--muted)';
+  box.textContent = '正在调用 Agent，请稍候…';
+
+  const agentKey = agentType + '_agent';
+  if (agentStats[agentKey]) {
+    agentStats[agentKey].calls++;
+    agentStats[agentKey].last = new Date().toLocaleTimeString('zh-CN');
+  }
+
+  // 尝试调用真实后端，否则返回演示响应
+  const result = await fetchAPI('/agents/dispatch', {
+    method: 'POST',
+    body: JSON.stringify({ shop_id: shopId, task_type: agentType, instruction }),
+  });
+
+  const text = result?.analysis || getMockAnalysis(agentType, instruction);
+  box.style.color = 'var(--text)';
+  box.textContent = text;
+
+  addLog('success', `${agentType} 执行完成`, instruction.slice(0,50) + '…', '🤖');
+  btn.innerHTML = '🚀 发送任务';
+  btn.disabled = false;
+}
+
+async function askLiveAgent() {
+  const btn = document.querySelector('[onclick="askLiveAgent()"]');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  const box = document.getElementById('live-advice');
+  box.textContent = '直播运营 Agent 分析中…';
+  await new Promise(r => setTimeout(r, 1200));
+  const live = snapshot.livestream || {};
+  box.textContent = `【直播间实时策略建议】
+
+📊 当前状态评估
+在线人数 ${(live.online_viewers||0).toLocaleString()}，GPM ¥${(live.gpm||0).toFixed(0)}，加购率 ${((live.add_cart_rate||0)*100).toFixed(1)}%，整体状态良好。
+
+⚡ 实时策略建议（按优先级）
+1. 当前在线人数处于波动区间，建议 5 分钟内切换一款引流价商品（50元以内），快速拉动下单气氛
+2. GPM 处于良好水位，可切入主推品（水乳套装），强化「库存仅剩 XX 件」的紧迫感话术
+3. 每 15 分钟发起一次互动（提问、抽奖话术），维持评论区活跃度
+
+📅 下一个 30 分钟节奏规划
+00:00-10:00 → 引流款（精华液小样 9.9 元秒杀）
+10:00-20:00 → 主推款（水乳套装 299 元）重点逼单
+20:00-28:00 → 利润款（套装礼盒 599 元）
+28:00-30:00 → 互动留存，预告下一个秒杀品目
+
+💡 联动建议
+通知投放 Agent 同步放量，黄金时段（当前时间段）是流量价值最高窗口。`;
+  addLog('success', '直播运营 Agent 已给出建议', '实时策略分析完成', '🎥');
+  btn.innerHTML = '获取 AI 建议';
+  btn.disabled = false;
+}
+
+async function dispatchMulti() {
+  const checks = { analysis:'m-analysis', ads:'m-ads', content:'m-content', livestream:'m-livestream', product:'m-product' };
+  const selected = Object.entries(checks).filter(([k,id]) => document.getElementById(id).checked).map(([k])=>k);
+  if (!selected.length) { alert('请选择至少一个 Agent'); return; }
+
+  const btn = document.getElementById('multi-dispatch-btn');
+  btn.innerHTML = '<span class="spinner"></span> 并发执行中…';
+  btn.disabled = true;
+
+  const div = document.getElementById('multi-response');
+  div.innerHTML = `<div style="color:var(--muted);font-size:12px">正在并发调度 ${selected.length} 个 Agent…</div>`;
+
+  await new Promise(r => setTimeout(r, 2000 + selected.length * 300));
+
+  div.innerHTML = `
+    <div class="card" style="margin:0">
+      <div class="card-header"><span>✅</span><span class="card-title">并发调度完成 — ${selected.length} 个 Agent</span></div>
+      ${selected.map(type => {
+        const agent = AGENTS.find(a=>a.type===type);
+        const k = type+'_agent';
+        agentStats[k].calls++; agentStats[k].last = new Date().toLocaleTimeString('zh-CN');
+        return `<div style="display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:18px;margin-right:10px">${agent?.icon||'🤖'}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600">${agent?.name||type}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">分析完成，建议动作 ${2+Math.floor(Math.random()*3)} 条</div>
+          </div>
+          <span class="badge badge-green">成功</span>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:12px;padding:10px;background:rgba(34,197,94,0.08);border-radius:8px;border:1px solid rgba(34,197,94,0.2)">
+        <div style="font-size:12px;font-weight:600;color:#4ade80;margin-bottom:4px">🧠 Orchestrator 仲裁结果</div>
+        <div style="font-size:11px;color:var(--muted)">共收到 ${selected.length * 3} 条建议动作 → 冲突去重后保留 ${selected.length * 2 + 1} 条 → 已提交执行层执行</div>
+      </div>
+    </div>`;
+
+  addLog('success', `并发调度 ${selected.length} 个 Agent 完成`, `已提交执行层`, '🧠');
+  btn.innerHTML = '🧠 并发调度选中 Agent';
+  btn.disabled = false;
+}
+
+function getMockAnalysis(type, instruction) {
+  const analyses = {
+    analysis: `【经营分析 Agent · 分析报告】
+
+📌 现状概述
+当前店铺今日 GMV ¥128,500，订单量 342 单，访客 15,800 人次，整体呈增长态势。转化率 2.16%，处于行业中游水平。
+
+❗ 问题诊断
+⚠️ 客单价 ¥375.7，低于同类目均值，建议通过套餐组合提升
+⚠️ 复购率 28%，有提升空间，建议加强会员营销
+🔵 新买家占比 63.7%，新客获取效率良好
+
+✅ 行动建议
+1. 优化商品详情页：重点强化核心 SKU「水乳套装」的卖点展示，加入使用前后对比
+2. 设置满减门槛：满 299 减 30，引导客单价提升至 420 元以上
+3. 开启老客定向投放：对 90 天内购买过的用户单独定向，预计复购率提升 8%~12%
+4. 监控直播间转化漏斗：重点排查加购到支付的流失环节`,
+
+    ads: `【投放优化 Agent · 广告诊断】
+
+📌 当前投放概况
+总消耗 ¥8,500，整体 ROI 3.8，处于健康区间。三个计划表现分化明显。
+
+✅ 优化建议
+1. 品牌词计划（ROI 5.2）→ 建议扩预算 30%，当前跑量不足
+2. 竞品词计划（ROI 3.1）→ 维持现状，持续观察 3 天
+3. 兴趣人群计划（ROI 3.2）→ 建议拆分测试：美妆兴趣 vs 电商购物兴趣，分别评估
+
+⚙️ 具体操作
+1. 进入来客后台 → 营销推广 → 广告计划
+2. 选中「品牌词」计划 → 编辑预算 → 由 2100 调整至 2730（+30%）
+3. 新建 A/B 测试计划：基于「兴趣人群」计划复制，修改人群定向后独立观察`,
+
+    content: `【内容生成 Agent · 创作输出】
+
+🎬 短视频脚本（30 秒）
+
+[开场 0-3s] 特写镜头：肌肤纹理对比
+口播：「同样 28 岁，为什么她看起来比你年轻 5 岁？」
+
+[问题呈现 3-10s] 快切：干燥、暗沉、毛孔
+字幕：「熬夜、护肤不当、选错产品……」
+
+[解决方案 10-22s] 产品出镜：水乳套装
+口播：「这套组合用了 7 天，水油平衡了、肤色亮了」
+特效字幕：「亲测有效 | 博主自用款」
+
+[Call to Action 22-30s]
+口播：「直播间今天 299 拿走，评论区「想要」我给你链接」
+
+📝 商品主图文案
+主图 1：「7 天亮肤套装」+ 使用前后对比
+主图 2：「¥299 拿走护肤全套」+ 成分表突出`,
+
+    livestream: `【直播运营 Agent · 实时策略】
+
+📊 当前直播间状态：在线 3,240 人，GPM ¥2,850，整体良好
+
+⚡ 实时建议（立即执行）
+1. 当前人数稳定，这是推主推品的最佳时机！
+2. 话术参考：「姐妹们！库存只剩最后 50 套，拍完涨价！」
+3. 5 分钟后设置一个优惠券（立减 20 元），制造抢购氛围
+
+📅 未来 30 分钟节奏
+00:00 → 秒杀引流（精华液 9.9）
+10:00 → 主推逼单（水乳套装）
+20:00 → 利润品（礼盒）
+28:00 → 留存预热（明天福利预告）`,
+
+    product: `【商品运营 Agent · 库存与定价分析】
+
+⚠️ 紧急预警
+「面膜 10片」库存仅剩 5 件，日均销售 40 件，即将断货！
+
+✅ 建议操作
+1. 立即将「面膜 10片」设置限购（每人限购 1 件），延缓消耗
+2. 48 小时内完成补货或临时下架
+3. 「精华液 30ml」库存 12 件，日销 28 件，3 天内需补货
+
+💰 定价优化建议
+「水乳套装」当前价 ¥299，建议在大促前 3 天调至 ¥349（划线价 ¥399），
+活动日恢复 ¥299，制造优惠感，预计转化率提升 15%。`,
+
+    qa: `【商家问答 Agent · 规则解读】
+
+根据您的问题，为您解读相关规则：
+
+📋 抖音平台商品违禁词规定
+以下类型用语属于违禁范畴：
+• 绝对化用语：最好、第一、绝对、顶级、极致
+• 夸大宣传：包治百病、立竿见影（医疗类）
+• 虚假承诺：保证退款、百分百有效
+
+⚠️ 违规后果
+• 轻微违规：商品下架，整改后可重新上架
+• 严重违规：扣押金 + 封禁链接
+• 多次违规：店铺降权甚至关闭
+
+✅ 建议操作
+1. 使用来客后台「违禁词检测」工具（商品管理 → 商品诊断）自查
+2. 将绝对化用语替换为数据化表达：「97% 用户反馈」比「最好」更安全
+3. 提前在【商品描述】模块避免医疗功效词汇`
+  };
+  return analyses[type] || analyses.analysis;
+}
+
+// ── EXECUTION ──────────────────────────────────────────────
+function renderExecution() {
+  const actions = [
+    { icon:'💰', name:'自动调价', desc:'实时监控竞品与需求，动态调整商品售价' },
+    { icon:'🚀', name:'自动投放', desc:'广告计划自动创建、暂停、扩量、出价' },
+    { icon:'🖊️', name:'自动生成内容', desc:'脚本、标题、封面文案批量输出与发布' },
+    { icon:'🎁', name:'自动配置活动', desc:'秒杀、满减、拼团等促销活动自动上线' },
+    { icon:'📬', name:'自动推送任务', desc:'运营待办、异常预警实时推送给商家' },
+    { icon:'📄', name:'自动生成日报/周报', desc:'经营报告自动汇总、图表生成、定时推送' },
+  ];
+  document.getElementById('action-list').innerHTML = actions.map(a => `
+    <div class="action-item">
+      <span class="action-icon">${a.icon}</span>
+      <div>
+        <div class="action-name">${a.name}</div>
+        <div class="action-desc">${a.desc}</div>
+      </div>
+      <div class="action-status">
+        <span class="badge badge-green">已启用</span>
+      </div>
+    </div>`).join('');
+
+  const schedulers = [
+    { name:'每日经营日报', interval:'每天 08:00', last:'今日 08:00', status:'成功' },
+    { name:'投放健康巡检', interval:'每小时',     last:'1 小时前',  status:'成功' },
+    { name:'库存水位检查', interval:'每 30 分钟', last:'28 分钟前', status:'成功' },
+    { name:'规则告警扫描', interval:'每 5 分钟',  last:'3 分钟前',  status:'成功' },
+    { name:'周度经营周报', interval:'每周一 09:00',last:'3 天前',   status:'成功' },
+  ];
+  document.getElementById('scheduler-list').innerHTML = schedulers.map(s => `
+    <div class="action-item">
+      <span class="action-icon">⏰</span>
+      <div>
+        <div class="action-name">${s.name}</div>
+        <div class="action-desc">${s.interval} · 上次: ${s.last}</div>
+      </div>
+      <span class="badge badge-green">${s.status}</span>
+    </div>`).join('');
+}
+
+// ── LOGS ───────────────────────────────────────────────────
+function addLog(type, title, detail, icon='ℹ️') {
+  logs.unshift({ type, title, detail, icon, time: new Date().toLocaleTimeString('zh-CN') });
+  if (logs.length > 100) logs.pop();
+}
+
+function renderLogs() {
+  if (!logs.length) {
+    document.getElementById('log-list').innerHTML =
+      '<div style="color:var(--muted);padding:12px;text-align:center">暂无日志记录</div>';
+    return;
+  }
+  document.getElementById('log-list').innerHTML = logs.map(l => `
+    <div class="log-item">
+      <span class="log-icon">${l.icon}</span>
+      <div style="flex:1">
+        <div class="log-text"><strong>${l.title}</strong></div>
+        <div class="log-agent">${l.detail}</div>
+      </div>
+      <span class="log-time">${l.time}</span>
+    </div>`).join('');
+}
+
+function clearLogs() { logs = []; renderLogs(); }
+
+// ── FULL ANALYSIS ──────────────────────────────────────────
+async function runFullAnalysis() {
+  addLog('info', '启动全局智能分析', '并发调度所有 Agent', '🚀');
+  await refreshAll();
+  addLog('success', '感知层数据已更新', '6 个数据源全部接入', '🔌');
+
+  const matches = getRuleMatches();
+  addLog(matches.length > 0 ? 'warning' : 'success',
+    `规则引擎：命中 ${matches.length} 条规则`,
+    matches.map(m=>m.id).join(', ') || '无告警',
+    '⚡');
+
+  AGENTS.forEach(a => {
+    agentStats[a.key].calls++;
+    agentStats[a.key].last = new Date().toLocaleTimeString('zh-CN');
+    addLog('success', `${a.name} 分析完成`, '建议动作已提交执行层', a.icon);
+  });
+  addLog('success', 'Orchestrator 仲裁完成', '动作已执行', '🧠');
+
+  if (document.getElementById('page-logs').classList.contains('active')) renderLogs();
+}
+
+// ── HELPERS ────────────────────────────────────────────────
+function fmt(n) {
+  if (n >= 10000) return (n/10000).toFixed(1) + '万';
+  return n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// ── INIT ───────────────────────────────────────────────────
+document.getElementById('shop-select').addEventListener('change', refreshAll);
+
+// 预置一些初始日志
+addLog('info', '系统初始化完成', '四层架构已就绪', '✅');
+addLog('success', '感知层接入 6 个数据源', '来客API、电商、投放、商品、直播、客服', '🔌');
+addLog('success', '认知层知识库已加载', '18 条知识条目，9 条规则', '📚');
+addLog('success', '6 个 Agent 就绪', 'Orchestrator 协调器已启动', '🤖');
+
+// 初始化数据并渲染
+snapshot = getMockSnapshot();
+renderOverview();
+renderPerception();
+renderLiveMetrics();
+
+// 每 30 秒刷新直播数据
+setInterval(() => {
+  const live = snapshot.livestream;
+  if (live) {
+    live.online_viewers += Math.floor(Math.random() * 200 - 100);
+    live.gpm += Math.random() * 60 - 30;
+    live.online_viewers = Math.max(1000, live.online_viewers);
+    live.gpm = Math.max(500, live.gpm);
+  }
+  if (document.getElementById('page-livestream').classList.contains('active')) renderLiveMetrics();
+  if (document.getElementById('page-overview').classList.contains('active')) renderOverview();
+}, 10000);
+</script>
+</body>
+</html>
