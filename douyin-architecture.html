@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>抖音来客后台系统架构 — 智能体协作模型</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      padding: 32px 24px 48px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .page-header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #fe2c55 0%, #ff6b9d 50%, #25f4ee 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .page-header p {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #8b949e;
+    }
+
+    /* ── Layout wrapper ───────────────────────────────────── */
+    .arch-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* ── Arrow between layers ─────────────────────────────── */
+    .layer-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      position: relative;
+    }
+    .layer-arrow::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.25));
+    }
+    .layer-arrow svg {
+      position: relative;
+      z-index: 1;
+      background: #0d1117;
+      border-radius: 50%;
+      padding: 2px;
+    }
+
+    /* ── Layer card ───────────────────────────────────────── */
+    .layer {
+      border-radius: 16px;
+      padding: 24px 28px;
+      border: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+    .layer::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      opacity: 0.06;
+      pointer-events: none;
+    }
+
+    /* Layer colour themes */
+    .layer-perception  { background: linear-gradient(135deg, #0f1f3d 0%, #0d1b2e 100%); border-color: #1e6fe6; }
+    .layer-perception::before  { background: #1e6fe6; }
+    .layer-cognitive   { background: linear-gradient(135deg, #1a1040 0%, #130d30 100%); border-color: #7c3aed; }
+    .layer-cognitive::before   { background: #7c3aed; }
+    .layer-agent       { background: linear-gradient(135deg, #1a0f0f 0%, #200d10 100%); border-color: #fe2c55; }
+    .layer-agent::before       { background: #fe2c55; }
+    .layer-execution   { background: linear-gradient(135deg, #0f1f18 0%, #0b1a14 100%); border-color: #22c55e; }
+    .layer-execution::before   { background: #22c55e; }
+
+    /* ── Layer header ─────────────────────────────────────── */
+    .layer-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .layer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .badge-perception { background: rgba(30,111,230,0.2); color: #60a5fa; border: 1px solid rgba(30,111,230,0.4); }
+    .badge-cognitive  { background: rgba(124,58,237,0.2); color: #c084fc; border: 1px solid rgba(124,58,237,0.4); }
+    .badge-agent      { background: rgba(254,44,85,0.15); color: #f87171; border: 1px solid rgba(254,44,85,0.35); }
+    .badge-execution  { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.35); }
+
+    .layer-title {
+      font-size: 17px;
+      font-weight: 700;
+    }
+    .layer-subtitle {
+      margin-left: auto;
+      font-size: 12px;
+      color: #6e7681;
+    }
+
+    /* ── Chip grid ────────────────────────────────────────── */
+    .chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid transparent;
+      transition: transform 0.15s, box-shadow 0.15s;
+      cursor: default;
+    }
+    .chip:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+    .chip-icon { font-size: 15px; flex-shrink: 0; }
+
+    /* chip colours */
+    .chip-blue   { background: rgba(30,111,230,0.12); border-color: rgba(30,111,230,0.3); color: #93c5fd; }
+    .chip-purple { background: rgba(124,58,237,0.12); border-color: rgba(124,58,237,0.3); color: #d8b4fe; }
+    .chip-red    { background: rgba(254,44,85,0.10);  border-color: rgba(254,44,85,0.28); color: #fca5a5; }
+    .chip-green  { background: rgba(34,197,94,0.10);  border-color: rgba(34,197,94,0.28); color: #86efac; }
+    .chip-teal   { background: rgba(37,244,238,0.08); border-color: rgba(37,244,238,0.25); color: #5eead4; }
+
+    /* ── Agent grid (special cards) ───────────────────────── */
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 14px;
+    }
+
+    .agent-card {
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(254,44,85,0.2);
+      background: rgba(254,44,85,0.05);
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      cursor: default;
+    }
+    .agent-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(254,44,85,0.5);
+      box-shadow: 0 8px 28px rgba(254,44,85,0.15);
+    }
+    .agent-card-icon {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+    .agent-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fca5a5;
+      margin-bottom: 6px;
+    }
+    .agent-card-desc {
+      font-size: 11.5px;
+      color: #8b949e;
+      line-height: 1.55;
+    }
+    .agent-card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 10px;
+    }
+    .agent-tag {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(254,44,85,0.15);
+      color: #f87171;
+      border: 1px solid rgba(254,44,85,0.25);
+    }
+
+    /* ── Coordinator bar ──────────────────────────────────── */
+    .coordinator-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      background: rgba(254,44,85,0.08);
+      border: 1px dashed rgba(254,44,85,0.35);
+      margin-bottom: 18px;
+      font-size: 13px;
+    }
+    .coordinator-bar strong { color: #fca5a5; }
+    .coordinator-bar span  { color: #8b949e; }
+
+    /* ── Execution action rows ────────────────────────────── */
+    .exec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .exec-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(34,197,94,0.07);
+      border: 1px solid rgba(34,197,94,0.2);
+      transition: transform 0.15s, box-shadow 0.15s;
+      cursor: default;
+    }
+    .exec-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(34,197,94,0.12);
+    }
+    .exec-card-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .exec-card-body {}
+    .exec-card-title { font-size: 12.5px; font-weight: 600; color: #86efac; }
+    .exec-card-sub   { font-size: 11px; color: #6e7681; margin-top: 2px; line-height: 1.4; }
+
+    /* ── Data flow bus ────────────────────────────────────── */
+    .data-bus {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin: 8px 0;
+      position: relative;
+    }
+    .bus-line {
+      height: 2px;
+      flex: 1;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    }
+    .bus-label {
+      font-size: 10px;
+      color: #6e7681;
+      padding: 3px 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 999px;
+      background: #161b22;
+      white-space: nowrap;
+    }
+
+    /* ── Legend ───────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 32px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    .legend-title {
+      width: 100%;
+      font-size: 11px;
+      color: #6e7681;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: #8b949e;
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>抖音来客后台系统架构</h1>
+  <p>智能体协作模型 · Multi-Agent Collaboration Architecture</p>
+</div>
+
+<div class="arch-wrapper">
+
+  <!-- ══════════════════════════════════════════════════════
+       LAYER 1 — 感知层
+  ═══════════════════════════════════════════════════════ -->
+  <div class="layer layer-perception">
+    <div class="layer-header">
+      <span class="layer-badge badge-perception">① 感知层</span>
+      <span class="layer-title">数据接入</span>
+      <span class="layer-subtitle">Data Ingestion &amp; Sensing</span>
+    </div>
+    <div class="chip-grid">
+      <div class="chip chip-blue"><span class="chip-icon">🔌</span>来客后台 API</div>
+      <div class="chip chip-blue"><span class="chip-icon">🛒</span>抖音电商数据</div>
+      <div class="chip chip-blue"><span class="chip-icon">📢</span>投放数据</div>
+      <div class="chip chip-blue"><span class="chip-icon">📦</span>商品数据</div>
+      <div class="chip chip-blue"><span class="chip-icon">📡</span>直播数据</div>
+      <div class="chip chip-blue"><span class="chip-icon">💬</span>评论 / 客服数据</div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="layer-arrow">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 2v12M5 10l5 6 5-6" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       LAYER 2 — 认知层
+  ═══════════════════════════════════════════════════════ -->
+  <div class="layer layer-cognitive">
+    <div class="layer-header">
+      <span class="layer-badge badge-cognitive">② 认知层</span>
+      <span class="layer-title">知识库 &amp; 规则库</span>
+      <span class="layer-subtitle">Knowledge &amp; Rule Engine</span>
+    </div>
+    <div class="chip-grid">
+      <div class="chip chip-purple"><span class="chip-icon">📋</span>抖音平台规则库</div>
+      <div class="chip chip-purple"><span class="chip-icon">🗂️</span>来客后台操作知识库</div>
+      <div class="chip chip-purple"><span class="chip-icon">🏪</span>行业经营知识库</div>
+      <div class="chip chip-purple"><span class="chip-icon">🏷️</span>商品知识库</div>
+      <div class="chip chip-purple"><span class="chip-icon">🎯</span>投放策略知识库</div>
+      <div class="chip chip-purple"><span class="chip-icon">🎬</span>直播运营知识库</div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="layer-arrow">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 2v12M5 10l5 6 5-6" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       LAYER 3 — 智能体层
+  ═══════════════════════════════════════════════════════ -->
+  <div class="layer layer-agent">
+    <div class="layer-header">
+      <span class="layer-badge badge-agent">③ 智能体层</span>
+      <span class="layer-title">多 Agent 协作</span>
+      <span class="layer-subtitle">Multi-Agent Collaboration</span>
+    </div>
+
+    <!-- Coordinator -->
+    <div class="coordinator-bar">
+      <span style="font-size:18px">🧠</span>
+      <div>
+        <strong>调度协调器 Orchestrator</strong>
+        <span style="margin-left:8px">— 任务路由 · 上下文共享 · 结果聚合 · 冲突仲裁</span>
+      </div>
+    </div>
+
+    <div class="agent-grid">
+
+      <div class="agent-card">
+        <div class="agent-card-icon">📊</div>
+        <div class="agent-card-title">① 经营分析 Agent</div>
+        <div class="agent-card-desc">数据洞察、问题诊断、趋势预测、异常告警</div>
+        <div class="agent-card-tags">
+          <span class="agent-tag">数据分析</span>
+          <span class="agent-tag">诊断</span>
+          <span class="agent-tag">预测</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-icon">📢</div>
+        <div class="agent-card-title">② 投放优化 Agent</div>
+        <div class="agent-card-desc">广告计划创建、出价调优、预算分配、ROI 优化</div>
+        <div class="agent-card-tags">
+          <span class="agent-tag">出价策略</span>
+          <span class="agent-tag">A/B测试</span>
+          <span class="agent-tag">ROI</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-icon">✍️</div>
+        <div class="agent-card-title">③ 内容生成 Agent</div>
+        <div class="agent-card-desc">脚本策划、商品文案、直播话术、短视频创意</div>
+        <div class="agent-card-tags">
+          <span class="agent-tag">脚本</span>
+          <span class="agent-tag">文案</span>
+          <span class="agent-tag">话术</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-icon">🎥</div>
+        <div class="agent-card-title">④ 直播运营 Agent</div>
+        <div class="agent-card-desc">直播间实时策略、选品节奏、互动引导、流量承接</div>
+        <div class="agent-card-tags">
+          <span class="agent-tag">实时策略</span>
+          <span class="agent-tag">选品</span>
+          <span class="agent-tag">互动</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-icon">🛍️</div>
+        <div class="agent-card-title">⑤ 商品运营 Agent</div>
+        <div class="agent-card-desc">动态定价、库存预警、活动策略、竞品监控</div>
+        <div class="agent-card-tags">
+          <span class="agent-tag">定价</span>
+          <span class="agent-tag">库存</span>
+          <span class="agent-tag">活动</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-icon">🤝</div>
+        <div class="agent-card-title">⑥ 商家问答 Agent</div>
+        <div class="agent-card-desc">规则解释、政策解读、违规预警、申诉指导</div>
+        <div class="agent-card-tags">
+          <span class="agent-tag">规则</span>
+          <span class="agent-tag">政策</span>
+          <span class="agent-tag">Q&amp;A</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="layer-arrow">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 2v12M5 10l5 6 5-6" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       LAYER 4 — 执行层
+  ═══════════════════════════════════════════════════════ -->
+  <div class="layer layer-execution">
+    <div class="layer-header">
+      <span class="layer-badge badge-execution">④ 执行层</span>
+      <span class="layer-title">自动化动作</span>
+      <span class="layer-subtitle">Automated Execution &amp; Actions</span>
+    </div>
+    <div class="exec-grid">
+
+      <div class="exec-card">
+        <div class="exec-card-icon">💰</div>
+        <div class="exec-card-body">
+          <div class="exec-card-title">自动调价</div>
+          <div class="exec-card-sub">实时监控竞品与需求，动态调整商品售价</div>
+        </div>
+      </div>
+
+      <div class="exec-card">
+        <div class="exec-card-icon">🚀</div>
+        <div class="exec-card-body">
+          <div class="exec-card-title">自动投放</div>
+          <div class="exec-card-sub">广告计划自动创建、暂停、扩量、出价</div>
+        </div>
+      </div>
+
+      <div class="exec-card">
+        <div class="exec-card-icon">🖊️</div>
+        <div class="exec-card-body">
+          <div class="exec-card-title">自动生成内容</div>
+          <div class="exec-card-sub">脚本、标题、封面文案批量输出与发布</div>
+        </div>
+      </div>
+
+      <div class="exec-card">
+        <div class="exec-card-icon">🎁</div>
+        <div class="exec-card-body">
+          <div class="exec-card-title">自动配置活动</div>
+          <div class="exec-card-sub">秒杀、满减、拼团等促销活动自动上线</div>
+        </div>
+      </div>
+
+      <div class="exec-card">
+        <div class="exec-card-icon">📬</div>
+        <div class="exec-card-body">
+          <div class="exec-card-title">自动推送任务</div>
+          <div class="exec-card-sub">运营待办、异常预警实时推送给商家</div>
+        </div>
+      </div>
+
+      <div class="exec-card">
+        <div class="exec-card-icon">📄</div>
+        <div class="exec-card-body">
+          <div class="exec-card-title">自动生成日报/周报</div>
+          <div class="exec-card-sub">经营报告自动汇总、图表生成、定时推送</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       Legend
+  ═══════════════════════════════════════════════════════ -->
+  <div class="legend">
+    <div class="legend-title">图例 Legend</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#60a5fa"></span>感知层 — 数据接入</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c084fc"></span>认知层 — 知识 &amp; 规则</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#f87171"></span>智能体层 — 多 Agent 协作</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ade80"></span>执行层 — 自动化动作</div>
+    <div class="legend-item" style="margin-left:auto;color:#4e5562;font-size:11px">数据流向：感知 → 认知 → Agent → 执行</div>
+  </div>
+
+</div><!-- /arch-wrapper -->
+
+</body>
+</html>
